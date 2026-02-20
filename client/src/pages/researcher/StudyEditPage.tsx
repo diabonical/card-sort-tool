@@ -34,13 +34,22 @@ export default function StudyEditPage() {
     <div className="min-h-screen bg-gray-50">
       <NavBar />
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 text-sm">← Back</button>
-          <h1 className="text-2xl font-bold text-gray-900">{study.title}</h1>
-          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-            study.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' :
-            study.status === 'CLOSED' ? 'bg-gray-100 text-gray-600' : 'bg-yellow-100 text-yellow-700'
-          }`}>{study.status}</span>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate('/')} className="text-gray-400 hover:text-gray-600 text-sm">← Back</button>
+            <h1 className="text-2xl font-bold text-gray-900">{study.title}</h1>
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+              study.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' :
+              study.status === 'CLOSED' ? 'bg-gray-100 text-gray-600' : 'bg-yellow-100 text-yellow-700'
+            }`}>{study.status}</span>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate(`/studies/${studyId}/preview`)}
+          >
+            Preview
+          </Button>
         </div>
 
         {/* Tabs */}

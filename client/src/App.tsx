@@ -8,6 +8,7 @@ import DashboardPage from './pages/researcher/DashboardPage';
 import StudyCreatePage from './pages/researcher/StudyCreatePage';
 import StudyEditPage from './pages/researcher/StudyEditPage';
 import StudyResultsPage from './pages/researcher/StudyResultsPage';
+import StudyPreviewPage from './pages/researcher/StudyPreviewPage';
 
 // Participant pages
 import StudyLandingPage from './pages/participant/StudyLandingPage';
@@ -29,6 +30,7 @@ function AppRoutes() {
       <Route path="/studies/new" element={<ProtectedRoute><StudyCreatePage /></ProtectedRoute>} />
       <Route path="/studies/:id/edit" element={<ProtectedRoute><StudyEditPage /></ProtectedRoute>} />
       <Route path="/studies/:id/results" element={<ProtectedRoute><StudyResultsPage /></ProtectedRoute>} />
+      <Route path="/studies/:id/preview" element={<ProtectedRoute><StudyPreviewPage /></ProtectedRoute>} />
 
       {/* Participant */}
       <Route path="/s/:token" element={<StudyLandingPage />} />
