@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Researcher {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  studies      Study[]
+}
+
+model Study {
+  id                   Int        @id @default(autoincrement())
+  researcherId         Int
+  title                String
+  description          String     @default("")
+  type                 String     // OPEN | CLOSED | HYBRID
+  status               String     @default("DRAFT") // DRAFT | PUBLISHED | CLOSED
+  maxParticipants      Int?
+  endsAt               DateTime?
+  allowUnsorted        Boolean    @default(true)
+  shareToken           String     @unique @default(cuid())
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+  researcher           Researcher @relation(fields: [researcherId], references: [id])
+  cards                Card[]
+  researcherCategories Category[]
+  sessions             Session[]
+}
+
+model Card {
+  id          Int        @id @default(autoincrement())
+  studyId     Int
+  name        String
+  description String     @default("")
+  createdAt   DateTime   @default(now())
+  study       Study      @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  sortItems   SortItem[]
+}
+
+model Category {
+  id        Int        @id @default(autoincrement())
+  studyId   Int
+  sessionId Int?       // null = researcher-defined; set = participant-created
+  label     String
+  createdAt DateTime   @default(now())
+  study     Study      @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  session   Session?   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sortItems SortItem[]
+}
+
+model Session {
+  id             Int        @id @default(autoincrement())
+  studyId        Int
+  participantRef String     @default(cuid())
+  consentGiven   Boolean    @default(false)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  durationSecs   Int?
+  submitted      Boolean    @default(false)
+  createdAt      DateTime   @default(now())
+  study          Study      @relation(fields: [studyId], references: [id], onDelete: Cascade)
+  sortItems      SortItem[]
+  categories     Category[]
+}
+
+model SortItem {
+  id         Int      @id @default(autoincrement())
+  sessionId  Int
+  cardId     Int
+  categoryId Int?     // null = unsorted
+  updatedAt  DateTime @updatedAt
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  card       Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@unique([sessionId, cardId])
+}
