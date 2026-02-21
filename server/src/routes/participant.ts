@@ -34,6 +34,7 @@ router.get('/:token', async (req: Request, res: Response) => {
     id: study.id,
     title: study.title,
     description: study.description,
+    instructions: study.instructions,
     type: study.type,
     allowUnsorted: study.allowUnsorted,
     cards: study.cards,

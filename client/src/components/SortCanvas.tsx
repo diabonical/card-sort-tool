@@ -178,27 +178,35 @@ export default function SortCanvas({
     <div className="h-screen flex flex-col bg-gray-100">
       {/* Preview banner */}
       {preview && (
-        <div className="bg-amber-400 text-amber-900 text-sm font-medium px-4 py-2 flex items-center justify-between shrink-0">
+        <div className="bg-amber-400 text-amber-900 text-sm font-medium px-4 py-2.5 flex items-center justify-between shrink-0">
           <span>Preview Mode — this is how participants will see your study. No data is saved.</span>
-          <button
-            onClick={onExitPreview}
-            className="text-amber-900 hover:text-amber-700 underline text-sm"
-          >
+          <button onClick={onExitPreview} className="underline text-amber-800 hover:text-amber-700 text-sm ml-4 shrink-0">
             Exit Preview
           </button>
         </div>
       )}
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="font-semibold text-gray-900 text-sm">{studyTitle}</h1>
-          <p className="text-xs text-gray-400">
-            {unsortedCards.length} unsorted · {categories.length} groups
-          </p>
+      <header className="bg-brand-500 px-4 py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-white/20 flex items-center justify-center">
+              <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <span className="text-white font-bold text-sm tracking-wide">akendi</span>
+          </div>
+          <span className="text-white/60 text-sm">·</span>
+          <div>
+            <h1 className="font-semibold text-white text-sm leading-tight">{studyTitle}</h1>
+            <p className="text-white/70 text-xs">
+              {unsortedCards.length} unsorted · {categories.length} groups
+            </p>
+          </div>
         </div>
         {preview ? (
-          <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">
+          <span className="text-xs bg-white/20 text-white px-2.5 py-1 rounded-full font-medium">
             Preview
           </span>
         ) : (
@@ -207,6 +215,7 @@ export default function SortCanvas({
             disabled={!canSubmit}
             loading={submitting}
             size="sm"
+            className="bg-white !text-brand-500 hover:bg-brand-50"
           >
             Submit
           </Button>
@@ -230,7 +239,7 @@ export default function SortCanvas({
 
         <DragOverlay>
           {activeCard && (
-            <div className="bg-white border-2 border-blue-400 rounded-lg px-3 py-2 shadow-xl text-sm font-medium text-gray-800 max-w-[160px]">
+            <div className="bg-white border-2 border-brand-400 rounded-lg px-3 py-2 shadow-xl text-sm font-medium text-gray-800 max-w-[160px]">
               {activeCard.name}
             </div>
           )}
@@ -245,13 +254,13 @@ export default function SortCanvas({
 function UnsortedPanel({ cards }: { cards: Card[] }) {
   const { setNodeRef, isOver } = useDroppable({ id: 'unsorted' });
   return (
-    <div ref={setNodeRef} className={`w-52 shrink-0 bg-white border-r border-gray-200 flex flex-col ${isOver ? 'bg-blue-50' : ''}`}>
-      <div className="px-3 py-2 border-b border-gray-100">
+    <div ref={setNodeRef} className={`w-56 shrink-0 bg-white border-r border-gray-200 flex flex-col ${isOver ? 'bg-brand-50' : ''}`}>
+      <div className="px-3 py-2.5 border-b border-gray-100 bg-gray-50">
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Unsorted ({cards.length})</p>
       </div>
-      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+      <div className="flex-1 overflow-y-auto p-2.5 space-y-2">
         {cards.length === 0
-          ? <p className="text-xs text-gray-300 text-center pt-8">All cards sorted!</p>
+          ? <p className="text-xs text-gray-400 text-center pt-8">All cards sorted!</p>
           : cards.map((card) => <DraggableCard key={card.id} card={card} inUnsorted />)
         }
       </div>
@@ -275,10 +284,10 @@ interface CanvasAreaProps {
 function CanvasArea({ cards, categories, editingCatId, editLabel, onStartEdit, onSaveEdit, onRemoveCategory, onSetLabel }: CanvasAreaProps) {
   const { setNodeRef, isOver } = useDroppable({ id: 'canvas' });
   return (
-    <div ref={setNodeRef} className={`flex-1 relative overflow-auto ${isOver ? 'bg-blue-50/30' : 'bg-gray-50'}`} style={{ minHeight: '100%' }}>
+    <div ref={setNodeRef} className={`flex-1 relative overflow-auto ${isOver ? 'bg-brand-50/30' : 'bg-gray-50'}`} style={{ minHeight: '100%' }}>
       {categories.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-gray-300 text-sm">Drag cards here to create groups</p>
+          <p className="text-gray-400 text-sm">Drag cards here to create groups</p>
         </div>
       )}
       {categories.map((cat) => (
@@ -340,7 +349,7 @@ function CategoryCard({ cat, cards, isEditing, editLabel, onStartEdit, onSaveEdi
   return (
     <div
       ref={setNodeRef}
-      className={`absolute select-none rounded-xl border-2 shadow-sm transition-shadow ${isOver ? 'border-blue-400 bg-blue-50 shadow-md' : 'border-gray-200 bg-white'}`}
+      className={`absolute select-none rounded-xl border-2 shadow-sm transition-shadow ${isOver ? 'border-brand-400 bg-brand-50 shadow-md' : 'border-gray-200 bg-white'}`}
       style={{ left: pos.x, top: pos.y, minWidth: 180, maxWidth: 240, cursor: 'grab' }}
       onMouseDown={onMouseDown}
     >
@@ -349,20 +358,20 @@ function CategoryCard({ cat, cards, isEditing, editLabel, onStartEdit, onSaveEdi
           <div data-no-drag className="flex items-center gap-1 flex-1">
             <input autoFocus value={editLabel} onChange={(e) => onSetLabel(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') onSaveEdit(); }}
-              className="flex-1 text-sm border border-blue-400 rounded px-1 py-0.5 focus:outline-none" />
-            <button onClick={onSaveEdit} className="text-blue-600 text-xs px-1">✓</button>
+              className="flex-1 text-sm border border-brand-400 rounded px-1 py-0.5 focus:outline-none" />
+            <button onClick={onSaveEdit} className="text-brand-500 text-xs px-1">✓</button>
           </div>
         ) : (
           <button data-no-drag onClick={onStartEdit}
-            className="text-sm font-medium text-gray-800 truncate flex-1 text-left hover:text-blue-600">
+            className="text-sm font-medium text-gray-800 truncate flex-1 text-left hover:text-brand-500">
             {cat.label}
           </button>
         )}
-        <button data-no-drag onClick={onRemove} className="text-gray-300 hover:text-red-400 text-xs ml-1 shrink-0">✕</button>
+        <button data-no-drag onClick={onRemove} className="text-gray-400 hover:text-red-400 text-xs ml-1 shrink-0">✕</button>
       </div>
       <div className="p-2 space-y-1 min-h-[40px]">
         {cards.map((card) => <DraggableCard key={card.id} card={card} inCategory />)}
-        {cards.length === 0 && <p className="text-xs text-gray-300 text-center py-1">Drop cards here</p>}
+        {cards.length === 0 && <p className="text-xs text-gray-400 text-center py-1">Drop cards here</p>}
       </div>
     </div>
   );
@@ -384,8 +393,8 @@ function DraggableCard({ card, inUnsorted, inCategory }: { card: Card; inUnsorte
       {...attributes}
       style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.4 : 1 }}
       className={`px-3 py-2 rounded-lg text-sm font-medium cursor-grab active:cursor-grabbing select-none transition-colors ${
-        inUnsorted ? 'bg-blue-50 border border-blue-200 text-blue-800 hover:bg-blue-100' : 'bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100'
-      } ${isOver ? 'ring-2 ring-blue-400' : ''}`}
+        inUnsorted ? 'bg-brand-50 border border-brand-200 text-brand-800 hover:bg-brand-100' : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm'
+      } ${isOver ? 'ring-2 ring-brand-400' : ''}`}
     >
       {card.name}
       {card.description && <p className="text-xs text-gray-400 mt-0.5 font-normal">{card.description}</p>}

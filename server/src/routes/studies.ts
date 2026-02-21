@@ -18,7 +18,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
 
 // Create study
 router.post('/', requireAuth, async (req: Request, res: Response) => {
-  const { title, description, type, maxParticipants, endsAt, allowUnsorted } = req.body;
+  const { title, description, type, maxParticipants, endsAt, allowUnsorted, instructions } = req.body;
   if (!title || !type) {
     return res.status(400).json({ error: 'title and type are required' });
   }
@@ -31,6 +31,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       maxParticipants: maxParticipants ? parseInt(maxParticipants) : null,
       endsAt: endsAt ? new Date(endsAt) : null,
       allowUnsorted: allowUnsorted !== false,
+      instructions: instructions || '',
     },
   });
   return res.status(201).json(study);
@@ -59,7 +60,7 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
   });
   if (!existing) return res.status(404).json({ error: 'Study not found' });
 
-  const { title, description, type, maxParticipants, endsAt, allowUnsorted } = req.body;
+  const { title, description, type, maxParticipants, endsAt, allowUnsorted, instructions } = req.body;
   const study = await prisma.study.update({
     where: { id },
     data: {
@@ -69,6 +70,7 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
       maxParticipants: maxParticipants !== undefined ? (maxParticipants ? parseInt(maxParticipants) : null) : existing.maxParticipants,
       endsAt: endsAt !== undefined ? (endsAt ? new Date(endsAt) : null) : existing.endsAt,
       allowUnsorted: allowUnsorted !== undefined ? allowUnsorted : existing.allowUnsorted,
+      instructions: instructions !== undefined ? instructions : existing.instructions,
     },
   });
   return res.json(study);

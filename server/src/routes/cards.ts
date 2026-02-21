@@ -43,10 +43,11 @@ router.post('/:id/cards/bulk', requireAuth, upload.single('file'), async (req: R
   if (!study) return res.status(404).json({ error: 'Study not found' });
   if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-  let rows: Record<string, string>[];
+  // Parse as raw arrays so we can handle files with or without a header row
+  let rawRows: string[][];
   try {
-    rows = parse(req.file.buffer, {
-      columns: true,
+    rawRows = parse(req.file.buffer, {
+      columns: false,
       skip_empty_lines: true,
       trim: true,
     });
@@ -54,16 +55,22 @@ router.post('/:id/cards/bulk', requireAuth, upload.single('file'), async (req: R
     return res.status(400).json({ error: 'Invalid CSV file' });
   }
 
-  const cards = rows
-    .filter((r) => r.name || r.Name)
-    .map((r) => ({
-      studyId,
-      name: r.name || r.Name,
-      description: r.description || r.Description || '',
-    }));
+  if (rawRows.length === 0) {
+    return res.status(400).json({ error: 'CSV file is empty' });
+  }
+
+  // Detect and skip a header row: first cell matches a common column name
+  const HEADER_NAMES = new Set(['name', 'card', 'card name', 'term', 'label', 'item', 'title', 'description']);
+  const firstCell = (rawRows[0][0] ?? '').toLowerCase().trim();
+  const dataRows = HEADER_NAMES.has(firstCell) ? rawRows.slice(1) : rawRows;
+
+  const cards = dataRows
+    .map((row) => ({ name: row[0] ?? '', description: row[1] ?? '' }))
+    .filter((c) => c.name.length > 0)
+    .map((c) => ({ studyId, name: c.name, description: c.description }));
 
   if (cards.length === 0) {
-    return res.status(400).json({ error: 'CSV must have a "name" column' });
+    return res.status(400).json({ error: 'No cards found in file' });
   }
 
   await prisma.card.createMany({ data: cards });

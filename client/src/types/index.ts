@@ -11,6 +11,7 @@ export interface Study {
   maxParticipants: number | null;
   endsAt: string | null;
   allowUnsorted: boolean;
+  instructions: string;
   shareToken: string;
   createdAt: string;
   updatedAt: string;
@@ -87,6 +88,7 @@ export interface ParticipantStudy {
   description: string;
   type: StudyType;
   allowUnsorted: boolean;
+  instructions: string;
   cards: Card[];
   researcherCategories: Category[];
 }

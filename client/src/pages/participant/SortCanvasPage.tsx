@@ -29,11 +29,16 @@ export default function SortCanvasPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
-          <div className="text-5xl mb-4">✓</div>
+      <div className="min-h-screen bg-brand-500 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-10 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-brand-100 rounded-full flex items-center justify-center mx-auto mb-5">
+            <svg className="w-8 h-8 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Thank you!</h1>
-          <p className="text-gray-600">Your card sort has been submitted successfully.</p>
+          <p className="text-gray-500 text-sm">Your card sort has been submitted successfully.</p>
+          <p className="text-gray-400 text-xs mt-4">Powered by <span className="font-semibold text-brand-400">akendi</span></p>
         </div>
       </div>
     );

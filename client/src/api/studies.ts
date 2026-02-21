@@ -46,8 +46,10 @@ export const deleteCard = (studyId: number, cardId: number) =>
 export const bulkUploadCards = (studyId: number, file: File): Promise<Card[]> => {
   const form = new FormData();
   form.append('file', file);
+  // Clear the default 'application/json' header so axios detects FormData and
+  // sets 'multipart/form-data; boundary=...' automatically, which multer needs.
   return api.post(`/studies/${studyId}/cards/bulk`, form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
+    headers: { 'Content-Type': undefined },
   }).then((r) => r.data);
 };
 
