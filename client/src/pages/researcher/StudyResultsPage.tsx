@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as d3 from 'd3';
-import { getStudy, getResultsSummary, getSimilarity, getClustering, exportJson, exportExcel } from '../../api/studies';
+import { getStudy, getResultsSummary, getSimilarity, getClustering, exportJson, exportExcel, setSessionExclusion } from '../../api/studies';
 import NavBar from '../../components/NavBar';
 import Button from '../../components/Button';
 import type { Session, SimilarityResult, ClusteringResult, DendrogramNode } from '../../types';
 
-type Tab = 'overview' | 'similarity' | 'dendrogram' | 'clustered' | 'export';
+type Tab = 'overview' | 'responses' | 'similarity' | 'dendrogram' | 'clustered' | 'export';
 
 export default function StudyResultsPage() {
   const { id } = useParams<{ id: string }>();
@@ -27,7 +27,7 @@ export default function StudyResultsPage() {
         </div>
 
         <div className="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit flex-wrap">
-          {(['overview', 'similarity', 'dendrogram', 'clustered', 'export'] as Tab[]).map((t) => (
+          {(['overview', 'responses', 'similarity', 'dendrogram', 'clustered', 'export'] as Tab[]).map((t) => (
             <button key={t} onClick={() => setTab(t)}
               className={`px-4 py-2 rounded-lg text-sm font-medium capitalize transition-colors ${
                 tab === t ? 'bg-white shadow text-brand-500' : 'text-gray-500 hover:text-gray-800'
@@ -36,6 +36,7 @@ export default function StudyResultsPage() {
         </div>
 
         {tab === 'overview' && <OverviewTab studyId={studyId} />}
+        {tab === 'responses' && <ResponsesTab studyId={studyId} />}
         {tab === 'similarity' && <SimilarityTab studyId={studyId} />}
         {tab === 'dendrogram' && <DendrogramTab studyId={studyId} />}
         {tab === 'clustered' && <ClusteredTab studyId={studyId} />}
@@ -48,19 +49,44 @@ export default function StudyResultsPage() {
 // ─── Overview ────────────────────────────────────────────────────────────────
 
 function OverviewTab({ studyId }: { studyId: number }) {
+  const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['results-summary', studyId],
     queryFn: () => getResultsSummary(studyId),
   });
 
+  const toggleExclusion = useMutation({
+    mutationFn: ({ sessionId, excluded }: { sessionId: number; excluded: boolean }) =>
+      setSessionExclusion(studyId, sessionId, excluded),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['results-summary', studyId] });
+      queryClient.invalidateQueries({ queryKey: ['similarity', studyId] });
+      queryClient.invalidateQueries({ queryKey: ['clustering', studyId] });
+    },
+  });
+
   if (isLoading) return <p className="text-gray-400">Loading...</p>;
   const sessions: Session[] = data?.sessions ?? [];
 
+  const included = sessions.filter((s) => !s.excluded).length;
+  const excluded = sessions.filter((s) => s.excluded).length;
+
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <p className="text-sm text-gray-500 mb-1">Total submissions</p>
-        <p className="text-4xl font-bold text-gray-900">{sessions.length}</p>
+      {/* Stats bar */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 mb-1">Total submitted</p>
+          <p className="text-3xl font-bold text-gray-900">{sessions.length}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 mb-1">Included in analysis</p>
+          <p className="text-3xl font-bold text-green-600">{included}</p>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm p-5">
+          <p className="text-xs text-gray-500 mb-1">Excluded</p>
+          <p className="text-3xl font-bold text-gray-400">{excluded}</p>
+        </div>
       </div>
 
       {sessions.length === 0 ? (
@@ -73,28 +99,159 @@ function OverviewTab({ studyId }: { studyId: number }) {
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Participant</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Completed</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Duration</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Cards sorted</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Sorted</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Unsorted</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Groups</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {sessions.map((s: Session) => (
-                <tr key={s.id}>
-                  <td className="px-4 py-2 font-mono text-xs">{s.participantRef}</td>
-                  <td className="px-4 py-2 text-gray-500">
-                    {s.completedAt ? new Date(s.completedAt).toLocaleString() : '-'}
-                  </td>
-                  <td className="px-4 py-2 text-gray-500">
-                    {s.durationSecs != null ? `${Math.round(s.durationSecs / 60)}m ${s.durationSecs % 60}s` : '-'}
-                  </td>
-                  <td className="px-4 py-2 text-gray-500">
-                    {s.sortItems.filter(i => i.categoryId !== null).length} / {s.sortItems.length}
-                  </td>
-                </tr>
-              ))}
+              {sessions.map((s: Session) => {
+                const sorted = s.sortItems.filter((i) => i.categoryId !== null).length;
+                const unsorted = s.sortItems.filter((i) => i.categoryId === null).length;
+                const groups = s.categories.length;
+                return (
+                  <tr key={s.id} className={s.excluded ? 'opacity-50 bg-gray-50' : ''}>
+                    <td className="px-4 py-2 font-mono text-xs">{s.participantRef.slice(0, 16)}</td>
+                    <td className="px-4 py-2 text-gray-500">
+                      {s.completedAt ? new Date(s.completedAt).toLocaleString() : '-'}
+                    </td>
+                    <td className="px-4 py-2 text-gray-500 whitespace-nowrap">
+                      {s.durationSecs != null
+                        ? `${Math.floor(s.durationSecs / 60)}m ${s.durationSecs % 60}s`
+                        : '-'}
+                    </td>
+                    <td className="px-4 py-2 text-gray-500">{sorted}</td>
+                    <td className="px-4 py-2 text-gray-500">{unsorted}</td>
+                    <td className="px-4 py-2 text-gray-500">{groups}</td>
+                    <td className="px-4 py-2">
+                      {s.excluded ? (
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-400">
+                          Excluded
+                        </span>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">
+                          Included
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      <button
+                        onClick={() => toggleExclusion.mutate({ sessionId: s.id, excluded: !s.excluded })}
+                        disabled={toggleExclusion.isPending}
+                        className={`text-xs px-3 py-1 rounded-lg border transition-colors ${
+                          s.excluded
+                            ? 'border-brand-300 text-brand-600 hover:bg-brand-50'
+                            : 'border-gray-300 text-gray-500 hover:bg-gray-100'
+                        }`}
+                      >
+                        {s.excluded ? 'Re-include' : 'Exclude'}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Individual Responses ─────────────────────────────────────────────────────
+
+function ResponsesTab({ studyId }: { studyId: number }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['results-summary', studyId],
+    queryFn: () => getResultsSummary(studyId),
+  });
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  if (isLoading) return <p className="text-gray-400">Loading...</p>;
+  const sessions: Session[] = data?.sessions ?? [];
+  if (sessions.length === 0) return <p className="text-gray-400 text-sm">No submissions yet.</p>;
+
+  const selected = sessions.find((s) => s.id === selectedId) ?? sessions[0];
+
+  // Group sort items by category label
+  const groups = new Map<string, string[]>();
+  for (const item of selected.sortItems) {
+    const label = item.category?.label ?? '— Unsorted —';
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label)!.push(item.card.name);
+  }
+  // Put unsorted last
+  const unsortedCards = groups.get('— Unsorted —') ?? [];
+  groups.delete('— Unsorted —');
+  const sortedGroups = [...groups.entries()].sort(([a], [b]) => a.localeCompare(b));
+  if (unsortedCards.length > 0) sortedGroups.push(['— Unsorted —', unsortedCards]);
+
+  return (
+    <div className="flex gap-4 min-h-0">
+      {/* Sidebar: participant list */}
+      <div className="w-56 shrink-0 bg-white rounded-xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Participants</p>
+        </div>
+        <div className="divide-y divide-gray-50">
+          {sessions.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSelectedId(s.id)}
+              className={`w-full text-left px-4 py-3 text-sm transition-colors ${
+                s.id === (selectedId ?? sessions[0].id)
+                  ? 'bg-brand-50 text-brand-600 font-medium'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <p className="font-mono text-xs truncate">{s.participantRef.slice(0, 16)}</p>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {s.completedAt ? new Date(s.completedAt).toLocaleDateString() : '—'}
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Main: card groupings for selected participant */}
+      <div className="flex-1 bg-white rounded-xl shadow-sm p-6 overflow-auto">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="text-xs text-gray-400 font-mono">{selected.participantRef}</p>
+            <p className="text-xs text-gray-400">
+              {selected.completedAt ? new Date(selected.completedAt).toLocaleString() : '—'}
+              {selected.durationSecs != null && ` · ${Math.round(selected.durationSecs / 60)}m ${selected.durationSecs % 60}s`}
+            </p>
+          </div>
+          <span className="text-xs text-gray-400">
+            {selected.sortItems.filter((i) => i.categoryId !== null).length} / {selected.sortItems.length} cards sorted
+          </span>
+        </div>
+
+        {sortedGroups.length === 0 ? (
+          <p className="text-gray-400 text-sm">No sort data available.</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sortedGroups.map(([label, cardNames]) => (
+              <div key={label} className={`rounded-xl border p-4 ${label === '— Unsorted —' ? 'border-dashed border-gray-200 bg-gray-50' : 'border-gray-200 bg-white'}`}>
+                <p className={`text-xs font-semibold mb-3 ${label === '— Unsorted —' ? 'text-gray-400' : 'text-gray-700'}`}>
+                  {label}
+                  <span className="ml-1.5 font-normal text-gray-400">({cardNames.length})</span>
+                </p>
+                <div className="space-y-1.5">
+                  {cardNames.map((name) => (
+                    <div key={name} className="bg-gray-50 rounded-lg px-3 py-1.5 text-sm text-gray-700 border border-gray-100">
+                      {name}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

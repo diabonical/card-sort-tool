@@ -76,6 +76,9 @@ export const getSimilarity = (studyId: number): Promise<SimilarityResult> =>
 export const getClustering = (studyId: number): Promise<ClusteringResult> =>
   api.get(`/studies/${studyId}/results/clustering`).then((r) => r.data);
 
+export const setSessionExclusion = (studyId: number, sessionId: number, excluded: boolean) =>
+  api.patch(`/studies/${studyId}/results/sessions/${sessionId}`, { excluded }).then((r) => r.data);
+
 export const exportJson = (studyId: number) => {
   window.open(`/api/studies/${studyId}/results/export/json`, '_blank');
 };

@@ -65,6 +65,7 @@ model Session {
   completedAt    DateTime?
   durationSecs   Int?
   submitted      Boolean    @default(false)
+  excluded       Boolean    @default(false)
   createdAt      DateTime   @default(now())
   study          Study      @relation(fields: [studyId], references: [id], onDelete: Cascade)
   sortItems      SortItem[]

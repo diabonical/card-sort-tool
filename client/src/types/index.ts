@@ -45,6 +45,7 @@ export interface Session {
   completedAt: string | null;
   durationSecs: number | null;
   submitted: boolean;
+  excluded: boolean;
   sortItems: SortItem[];
   categories: Category[];
 }

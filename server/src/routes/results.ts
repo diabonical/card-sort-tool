@@ -28,6 +28,22 @@ router.get('/:id/results/summary', requireAuth, async (req: Request, res: Respon
   return res.json({ sessions });
 });
 
+// Exclude / re-include a session
+router.patch('/:id/results/sessions/:sessionId', requireAuth, async (req: Request, res: Response) => {
+  const studyId = parseInt(req.params.id);
+  const sessionId = parseInt(req.params.sessionId);
+  const { excluded } = req.body as { excluded: boolean };
+
+  const study = await getStudy(studyId, req.session.researcherId!);
+  if (!study) return res.status(404).json({ error: 'Study not found' });
+
+  const updated = await prisma.session.update({
+    where: { id: sessionId },
+    data: { excluded },
+  });
+  return res.json(updated);
+});
+
 // Similarity matrix
 router.get('/:id/results/similarity', requireAuth, async (req: Request, res: Response) => {
   const studyId = parseInt(req.params.id);
@@ -65,7 +81,7 @@ router.get('/:id/results/export/json', requireAuth, async (req: Request, res: Re
   if (!study) return res.status(404).json({ error: 'Study not found' });
 
   const sessions = await prisma.session.findMany({
-    where: { studyId, submitted: true },
+    where: { studyId, submitted: true, excluded: false },
     include: {
       sortItems: { include: { card: true, category: true } },
       categories: true,
@@ -86,7 +102,7 @@ router.get('/:id/results/export/excel', requireAuth, async (req: Request, res: R
   if (!study) return res.status(404).json({ error: 'Study not found' });
 
   const sessions = await prisma.session.findMany({
-    where: { studyId, submitted: true },
+    where: { studyId, submitted: true, excluded: false },
     include: {
       sortItems: { include: { card: true, category: true } },
     },

@@ -19,7 +19,7 @@ export async function computeSimilarityMatrix(studyId: number): Promise<Similari
   });
 
   const sessions = await prisma.session.findMany({
-    where: { studyId, submitted: true },
+    where: { studyId, submitted: true, excluded: false },
     include: {
       sortItems: { include: { category: true } },
     },
