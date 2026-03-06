@@ -156,3 +156,28 @@ export function extractLeafOrder(node: DendrogramNode): string[] {
   }
   return node.children.flatMap(extractLeafOrder);
 }
+
+function getLeafCardIds(node: DendrogramNode): number[] {
+  if (!node.children || node.children.length === 0)
+    return [parseInt(node.id.replace('leaf_', ''))];
+  return node.children.flatMap(getLeafCardIds);
+}
+
+export function cutDendrogramToGroups(
+  node: DendrogramNode,
+  cards: { id: number; name: string }[],
+  threshold: number
+): { name: string; cards: { id: number; name: string }[] }[] {
+  const cardMap = new Map(cards.map((c) => [c.id, c]));
+
+  function cut(n: DendrogramNode): { id: number; name: string }[][] {
+    if (!n.children || n.children.length === 0 || n.height <= threshold) {
+      return [getLeafCardIds(n).map((id) => cardMap.get(id)!).filter(Boolean)];
+    }
+    return n.children.flatMap(cut);
+  }
+
+  return cut(node)
+    .filter((g) => g.length > 0)
+    .map((groupCards, i) => ({ name: `Group ${i + 1}`, cards: groupCards }));
+}

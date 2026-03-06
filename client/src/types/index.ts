@@ -82,6 +82,27 @@ export interface Researcher {
   username: string;
 }
 
+// IA (Information Architecture) types
+export interface IACard { id: number; name: string; }
+
+export interface IASubGroup {
+  id: string;       // client-side crypto.randomUUID()
+  name: string;
+  cards: IACard[];
+}
+
+export interface IAGroup {
+  id: string;
+  name: string;
+  cards: IACard[];        // cards directly on this group (not in a sub-group)
+  subGroups: IASubGroup[];
+}
+
+export interface IASuggestion {
+  threshold: number;
+  groups: { name: string; cards: IACard[] }[];
+}
+
 // Participant-facing types
 export interface ParticipantStudy {
   id: number;

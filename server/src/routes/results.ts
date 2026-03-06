@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import ExcelJS from 'exceljs';
 import prisma from '../lib/prisma';
 import { requireAuth } from '../middleware/auth';
-import { computeSimilarityMatrix, buildDendrogram, extractLeafOrder } from '../services/analysis';
+import { computeSimilarityMatrix, buildDendrogram, extractLeafOrder, cutDendrogramToGroups } from '../services/analysis';
 
 const router = Router();
 
@@ -72,6 +72,65 @@ router.get('/:id/results/clustering', requireAuth, async (req: Request, res: Res
   const clusteredMatrix = newOrder.map((r) => newOrder.map((c) => matrix[r][c]));
 
   return res.json({ dendrogram, cards: orderedCards, clusteredMatrix });
+});
+
+// IA Suggestion
+router.get('/:id/results/ia-suggestion', requireAuth, async (req: Request, res: Response) => {
+  const studyId = parseInt(req.params.id);
+  const threshold = parseFloat((req.query.threshold as string) ?? '0.5');
+  const study = await getStudy(studyId, req.session.researcherId!);
+  if (!study) return res.status(404).json({ error: 'Study not found' });
+
+  const { cards, matrix } = await computeSimilarityMatrix(studyId);
+  if (cards.length < 2) return res.json({ threshold, groups: [] });
+
+  const dendrogram = buildDendrogram(cards, matrix);
+  const groups = cutDendrogramToGroups(dendrogram, cards, threshold);
+  return res.json({ threshold, groups });
+});
+
+// Export IA Excel
+router.post('/:id/results/export/ia-excel', requireAuth, async (req: Request, res: Response) => {
+  const studyId = parseInt(req.params.id);
+  const study = await getStudy(studyId, req.session.researcherId!);
+  if (!study) return res.status(404).json({ error: 'Study not found' });
+
+  const { groups } = req.body as {
+    groups: { name: string; cards: { id: number; name: string }[]; subGroups: { name: string; cards: { id: number; name: string }[] }[] }[];
+  };
+  const workbook = new ExcelJS.Workbook();
+
+  // Sheet 1: Flat
+  const flat = workbook.addWorksheet('IA (Flat)');
+  const flatHeader = flat.addRow(['Group', 'Sub-group', 'Card']);
+  flatHeader.font = { bold: true };
+  for (const g of groups) {
+    for (const card of g.cards) flat.addRow([g.name, '', card.name]);
+    for (const sg of g.subGroups ?? [])
+      for (const card of sg.cards) flat.addRow([g.name, sg.name, card.name]);
+  }
+
+  // Sheet 2: Hierarchical
+  const hier = workbook.addWorksheet('IA (Hierarchy)');
+  for (const g of groups) {
+    const gRow = hier.addRow([g.name]);
+    gRow.font = { bold: true };
+    gRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE5E7EB' } };
+    for (const card of g.cards) {
+      hier.addRow([`  ${card.name}`]).getCell(1).font = { color: { argb: 'FF6B7280' } };
+    }
+    for (const sg of g.subGroups ?? []) {
+      hier.addRow([`  ${sg.name}`]);
+      for (const card of sg.cards) {
+        hier.addRow([`    ${card.name}`]).getCell(1).font = { color: { argb: 'FF6B7280' } };
+      }
+    }
+  }
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename="study-${studyId}-ia.xlsx"`);
+  await workbook.xlsx.write(res);
+  return res.end();
 });
 
 // Export JSON

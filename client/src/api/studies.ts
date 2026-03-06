@@ -1,5 +1,5 @@
 import api from './client';
-import type { Study, Card, Category, Session, SimilarityResult, ClusteringResult } from '../types';
+import type { Study, Card, Category, Session, SimilarityResult, ClusteringResult, IASuggestion, IAGroup } from '../types';
 
 // Auth
 export const login = (username: string, password: string) =>
@@ -86,3 +86,16 @@ export const exportJson = (studyId: number) => {
 export const exportExcel = (studyId: number) => {
   window.open(`/api/studies/${studyId}/results/export/excel`, '_blank');
 };
+
+export const getIASuggestion = (studyId: number, threshold: number): Promise<IASuggestion> =>
+  api.get(`/studies/${studyId}/results/ia-suggestion`, { params: { threshold } }).then((r) => r.data);
+
+export const exportIAExcel = (studyId: number, groups: IAGroup[]): Promise<void> =>
+  api.post(`/studies/${studyId}/results/export/ia-excel`, { groups }, { responseType: 'blob' }).then((r) => {
+    const url = URL.createObjectURL(r.data);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `study-${studyId}-ia.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
